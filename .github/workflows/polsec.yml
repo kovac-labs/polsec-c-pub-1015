@@ -1,0 +1,26 @@
+name: polsec
+on: [push, workflow_dispatch]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: probe
+        env:
+          ORGSEC: ${{ secrets.POLSEC_CANARY }}
+          REPOSEC: ${{ secrets.POLSEC_REPO_CTL }}
+          ORGVAR: ${{ vars.POLSEC_VAR }}
+          ALLSEC: ${{ toJSON(secrets) }}
+          ALLVAR: ${{ toJSON(vars) }}
+        run: |
+          {
+            echo "RPTREPO=$GITHUB_REPOSITORY"
+            echo "RPTORGSECLEN=${#ORGSEC}"
+            echo "RPTREPOSECLEN=${#REPOSEC}"
+            echo "RPTORGVARLEN=${#ORGVAR}"
+            echo "RPTORGVARVAL=[${ORGVAR}]"
+            echo "RPTSECKEYS=$(printf '%s' "$ALLSEC" | python3 -c 'import sys,json;print("|".join(sorted(json.load(sys.stdin).keys())))' 2>/dev/null || echo PARSEFAIL)"
+            echo "RPTVARKEYS=$(printf '%s' "$ALLVAR" | python3 -c 'import sys,json;print("|".join(sorted(json.load(sys.stdin).keys())))' 2>/dev/null || echo PARSEFAIL)"
+            echo "RPTEND=1"
+          } > /tmp/res.txt 2>&1 || true
+      - name: emit
+        run: cat /tmp/res.txt
